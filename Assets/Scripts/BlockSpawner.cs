@@ -1,0 +1,57 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Rendering;
+
+public class BlockSpawner : MonoBehaviour
+{
+    [SerializeField] Block spawnableBlockPrefab;
+
+    [SerializeField] bool spawnOnXAxis;// initial spawn to z preferably
+
+    public void SpawnBlock()
+    {
+
+        if (Block.currentBlock != null)
+        { 
+            Block.SetPreviousBlock(Block.currentBlock);
+        }
+
+        Block previousBlock = Block.previousBlock;
+
+        var blockInstance = Instantiate(spawnableBlockPrefab);
+
+        Block.SetCurrentBlock(blockInstance);
+
+        //sets newly's spawned block's scale to the last's blocks scale
+        blockInstance.transform.localScale = new Vector3(previousBlock.transform.localScale.x,
+                                                        blockInstance.transform.localScale.y,
+                                                        previousBlock.transform.localScale.z);
+
+        //for custom position of spawned block
+        float x = this.spawnOnXAxis  ? transform.position.x: previousBlock.transform.position.x;
+        float previousBlockHeight = previousBlock.transform.localScale.y;
+        float spawnedBlockHeight = blockInstance.transform.localScale.y;
+        float z = !this.spawnOnXAxis ? transform.position.z: previousBlock.transform.position.z;
+        
+        //actually setting the position
+        blockInstance.transform.position =  new Vector3(x,
+                    previousBlock.transform.position.y + (previousBlockHeight / 2) + (spawnedBlockHeight / 2),
+                                                        z);
+
+        if (this.spawnOnXAxis)
+        {
+            blockInstance.SetMoveDirection(true);
+        }
+        else
+        {
+            blockInstance.SetMoveDirection(false);
+        }
+    }
+
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireCube(transform.position,spawnableBlockPrefab.transform.localScale);
+    }
+}
