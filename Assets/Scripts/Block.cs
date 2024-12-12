@@ -7,11 +7,11 @@ public class Block : MonoBehaviour
     public static Block currentBlock { get; private set; }
     public static Block previousBlock { get; private set; }
     [SerializeField] float moveSpeed = 1f;
-
     [SerializeField] bool isMoving = true;
-    bool moveAlongX = false;
     [SerializeField] bool isBaseBlock = false;
+    bool moveAlongX = false;
 
+    private Coroutine autostopCoroutine;
     //related to color
     Renderer blockRenderer;
 
@@ -36,7 +36,11 @@ public class Block : MonoBehaviour
     private void OnEnable()
     {
         SetBlockColor();
-        StartCoroutine(StartAutoStopSequence());
+        if(autostopCoroutine != null)
+        {
+            StopCoroutine(autostopCoroutine);
+        }
+        autostopCoroutine = StartCoroutine(StartAutoStopSequence());
     }
     private void Update()
     {
@@ -61,10 +65,14 @@ public class Block : MonoBehaviour
 
     public void Stop()
     {
+        if (autostopCoroutine != null)
+        {
+            StopCoroutine(autostopCoroutine);
+            autostopCoroutine = null;
+        }
         Debug.Log("stop triggered by" + this.gameObject.name);                                                       
         isMoving = false;
         moveSpeed = 0f;
-        StopCoroutine(StartAutoStopSequence());
 
         float hangoverValue = moveAlongX
                              ? transform.position.x - previousBlock.transform.position.x
@@ -176,6 +184,7 @@ public class Block : MonoBehaviour
             yield break;
         }   
         yield return new WaitForSeconds(GameManager.Instance.GetTimeForAutoStoping());
+        Debug.Log("auto Stopped");
         Stop();
     }
 }
