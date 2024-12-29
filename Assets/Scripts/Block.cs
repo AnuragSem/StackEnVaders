@@ -12,8 +12,13 @@ public class Block : MonoBehaviour
     bool moveAlongX = false;
 
     private Coroutine autostopCoroutine;
+
     //related to color
     Renderer blockRenderer;
+
+    //health related parameters
+    private float maxBlockHealth = 100f;
+    private float currentBlockHealth;
 
     public static void SetCurrentBlock(Block block)
     {
@@ -48,6 +53,19 @@ public class Block : MonoBehaviour
         {
             MoveBlock();
         }
+    }
+
+    public void SetHP(float refrenceVolume,float currentVolume)
+    {
+        if (isBaseBlock)
+        {
+            currentBlockHealth = maxBlockHealth;
+            Debug.Log("base block health" + currentBlockHealth);
+            return;
+        }
+       currentBlockHealth = (currentVolume/refrenceVolume)*maxBlockHealth;
+        Debug.Log($"current health {currentBlockHealth}");
+
     }
 
     private void MoveBlock()

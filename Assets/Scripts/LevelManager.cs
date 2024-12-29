@@ -10,6 +10,13 @@ public class LevelManager : MonoBehaviour
     [SerializeField] List<Block> baseBlocks;
     [SerializeField] List<Vector3> baseBlockPositions;
 
+    //spawners
+    [SerializeField] BlockSpawner blockSpawnerOnX;
+    [SerializeField] BlockSpawner blockSpawnerOnZ;
+    
+    [SerializeField] Vector3 distanceOfSpawnerOnXAxisFromCurBaseBlock;
+    [SerializeField] Vector3 distanceOfSpawnerOnZAxisFromCurBaseBlock;
+
     int currentBaseBlockIndex;
 
     private void Start()
@@ -23,11 +30,13 @@ public class LevelManager : MonoBehaviour
         if (currentBaseBlockIndex<baseBlocks.Count)
         {
             GameManager.Instance.stackHeight = 0;
-            cameraController.SetTarget(baseBlocks[currentBaseBlockIndex].transform);
+            
             Block.SetPreviousBlock(baseBlocks[currentBaseBlockIndex]);
             Debug.Log("current block set to "+ Block.previousBlock.gameObject.name);
             Block.SetCurrentBlock(baseBlocks[currentBaseBlockIndex]);
             Debug.Log("previous block set to " + Block.currentBlock.gameObject.name);
+
+            cameraController.SetTarget(baseBlocks[currentBaseBlockIndex].transform);
         }
         else
             Debug.Log("base Block Indexing Fucked");
@@ -37,7 +46,7 @@ public class LevelManager : MonoBehaviour
     {
         for (int i = 0; i < baseBlocks.Count; i++)
         {
-            baseBlockPositions.Add(baseBlocks[i].gameObject.transform.position);
+            baseBlockPositions.Add(baseBlocks[i].transform.position);
         }
     }
 
@@ -49,5 +58,21 @@ public class LevelManager : MonoBehaviour
     public int GetTotalBaseBLocks()
     { 
         return baseBlocks.Count;
+    }
+
+    public void SetSpawnerPosition()
+    {
+        blockSpawnerOnX.transform.position = baseBlockPositions[currentBaseBlockIndex] + distanceOfSpawnerOnXAxisFromCurBaseBlock;
+        blockSpawnerOnZ.transform.position = baseBlockPositions[currentBaseBlockIndex] + distanceOfSpawnerOnZAxisFromCurBaseBlock;
+    }
+
+    public void SpawnBlockOnX()
+    {
+        blockSpawnerOnX.SpawnBlock();
+    }
+
+    public void SpawnBlockOnZ()
+    { 
+        blockSpawnerOnZ.SpawnBlock();
     }
 }

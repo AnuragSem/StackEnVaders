@@ -6,8 +6,19 @@ public class CameraController : MonoBehaviour
 {
     Transform target;
     [SerializeField] float followSpeed = 5f;
-    [SerializeField] float verticalCameraOffset = 7f;
-    [SerializeField] float horizontalCameraOffset = 5.9f;
+
+    [Header("Camera position for stack game")]
+    [SerializeField] float xCameraOffset = 4f;
+    [SerializeField] float yCameraOffset = 5f;
+    [SerializeField] float zCameraOffset = 4f;
+
+    [Header("Camera rotation for stack game")]
+    [SerializeField] float xRotation;
+    [SerializeField] float yRotation;
+    [SerializeField] float zRotation;
+
+    
+
 
     private void LateUpdate()
     {
@@ -20,10 +31,12 @@ public class CameraController : MonoBehaviour
         {
             Vector3 targetPosition = target.position;
 
-            float targetY = target.position.y + verticalCameraOffset;
-            float targetX = target.position.x + horizontalCameraOffset;
+            float targetX = target.position.x + xCameraOffset;
+            float targetY = target.position.y + yCameraOffset;
+            float targetZ = target.position.z + zCameraOffset;
+            
 
-            Vector3 newCameraPosition = new Vector3(targetX, Mathf.Max(target.position.y, targetY), transform.position.z);
+            Vector3 newCameraPosition = new Vector3(targetX, Mathf.Max(target.position.y, targetY),targetZ);
             transform.position = Vector3.Lerp(transform.position, newCameraPosition, followSpeed * Time.deltaTime);
         }
     }

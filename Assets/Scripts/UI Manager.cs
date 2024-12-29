@@ -36,16 +36,6 @@ public class UIManager : MonoBehaviour
             Destroy(gameObject);
     }
 
-    private void Update()
-    {
-        if (timer!=null && timer.isTimerStarted)
-        {
-            Debug.Log("it started continue timer");
-            timer.RunSwitchBaseBLockOptionTimer();
-        }
-    }
-
-
     public void DisplayCountdownText(bool state)
     {
         countdownText.gameObject.SetActive(state);
@@ -78,12 +68,12 @@ public class UIManager : MonoBehaviour
         LevelSelectPanel.SetActive(false);
     }
 
-    void SwitchUIWhenGameOver(bool areBaseBlockRemainging)
+    public void OnSBBButtonClicked()
     {
-        countdownText.gameObject.SetActive(false);
-        playPauseMenu.gameObject.SetActive(true);
-
-        playPauseScoreText.gameObject.SetActive(areBaseBlockRemainging);
+        timer.isTimerStarted = false;
+        timer.ResetTimerValue();
+        CustomBaseBlockSwitchButtonWithTimer.SetActive(false);
+        GameManager.Instance.StartCountDownCoroutie();
     }
 
     public void OnGameOverWithBaseBlocksRemaining()

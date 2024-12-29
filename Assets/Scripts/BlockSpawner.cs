@@ -9,6 +9,16 @@ public class BlockSpawner : MonoBehaviour
 
     [SerializeField] bool spawnOnXAxis;// initial spawn to z preferably
 
+    float orignalVolume;
+
+    float currentBlockVolume;
+    private void Start()
+    {
+        orignalVolume = spawnableBlockPrefab.transform.localScale.x * spawnableBlockPrefab.transform.localScale.y *
+                              spawnableBlockPrefab.transform.localScale.z;
+        Debug.Log("orignal volume " + orignalVolume);
+    }
+
     public void SpawnBlock()
     {
 
@@ -20,6 +30,9 @@ public class BlockSpawner : MonoBehaviour
         Block previousBlock = Block.previousBlock;
 
         var blockInstance = Instantiate(spawnableBlockPrefab);
+        
+        
+
 
         Block.SetCurrentBlock(blockInstance);
 
@@ -27,6 +40,10 @@ public class BlockSpawner : MonoBehaviour
         blockInstance.transform.localScale = new Vector3(previousBlock.transform.localScale.x,
                                                         blockInstance.transform.localScale.y,
                                                         previousBlock.transform.localScale.z);
+
+        currentBlockVolume = blockInstance.transform.localScale.x*
+                             blockInstance.transform.localScale.y*
+                             blockInstance.transform.localScale.z;
 
         //for custom position of spawned block
         float x = this.spawnOnXAxis  ? transform.position.x: previousBlock.transform.position.x;
@@ -39,6 +56,10 @@ public class BlockSpawner : MonoBehaviour
                     previousBlock.transform.position.y + (previousBlockHeight / 2) + (spawnedBlockHeight / 2),
                                                         z);
 
+        //sets hp
+        blockInstance.SetHP(orignalVolume,currentBlockVolume);
+
+
         if (this.spawnOnXAxis)
         {
             blockInstance.SetMoveDirection(true);
@@ -47,6 +68,8 @@ public class BlockSpawner : MonoBehaviour
         {
             blockInstance.SetMoveDirection(false);
         }
+
+
     }
 
     private void OnDrawGizmos()

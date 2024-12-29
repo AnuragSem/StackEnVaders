@@ -12,13 +12,23 @@ public class Timer : MonoBehaviour
     float timerValue;
     float fillFraction;
 
-
+    private void Update()
+    {
+        if (isTimerStarted)
+        { 
+            RunSwitchBaseBLockOptionTimer();
+        }
+    }
 
     private void Awake()
     {
         timerValue = timeForContinuing;
     }
 
+    public void ResetTimerValue()
+    {
+        timerValue = timeForContinuing;
+    }
     public void CancelTimer()
     {
         timerValue = 0;
@@ -37,7 +47,7 @@ public class Timer : MonoBehaviour
             isTimerStarted = false;
             UIManager.Instance.CustomBaseBlockSwitchButtonWithTimer.SetActive(false);
             UIManager.Instance.OnGameOverWithNOBaseBlockRemaining(true);
-            timerValue = timeForContinuing;
+            ResetTimerValue();
         }
     }
 }
