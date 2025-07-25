@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 3693595820832686211}
   - component: {fileID: 5273931375143542051}
   - component: {fileID: 619857619818326320}
+  - component: {fileID: 5305626447461564098}
   m_Layer: 0
   m_Name: MovingCube
   m_TagString: Untagged
@@ -118,5 +119,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5909be37916ff7a4daa9161826d141ca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 1
+  baseBlockHP: 1000
+  maxBlockHealth: 100
+  indexInStack: -1
   isMoving: 1
+  moveSpeed: 1
+  minMoveSpeed: 1
+  speedIncrementAfterEachBLock: 0.01
+  maxMoveSpeed: 5
+  isBaseBlock: 0
+--- !u!114 &5305626447461564098
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7277638580594615031}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a8acde21814df048b15f1319de81572, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  edgeColor: {r: 0, g: 0, b: 0, a: 1}
+  edgeThickness: 0.075

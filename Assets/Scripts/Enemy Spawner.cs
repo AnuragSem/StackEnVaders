@@ -4,35 +4,77 @@ using UnityEngine;
 
 public class EnemySpawner : MonoBehaviour
 {
-    [SerializeField] List<GameObject> enemyPrefabs;
-    [SerializeField] Transform spawnPoint;
-    [SerializeField] Transform enemyGroupingObejctTransform;
+    EnemySpawnerManager enemySpawnerManager;
+    public int spawnerIndexInSpawnerManager;
 
     [SerializeField] bool isSpawning;
-    [SerializeField] float spawnDelay;
+    [SerializeField] bool skipWaveTime;
+
     [SerializeField] int minSpawnHeight;
     [SerializeField] int maxSpawnHeight;
 
+    [SerializeField] Transform spawnPoint;
+    [SerializeField] WaypointManager waypointManager;
+    [SerializeField] List<WaveData> enemyWave;
+    int currentwaveIndex = 0;
 
-    //[SerializeField]Transform lastBaseBlock;
-    //[SerializeField] float SpawnDistanceFromStack;
+    //just putting enem ies under a parent so that they do not pour into my scene to generate clutter
+    [SerializeField] Transform enemyGroupingObejctTransform;
 
-    private void Start()
+    private void OnEnable()
     {
-        if (spawnPoint == null)
+        StartCoroutine(SpawnWave());
+    }
+
+    private void Awake()
+    {
+        enemySpawnerManager = transform.parent.GetComponent<EnemySpawnerManager>();
+    }
+
+    public int GetMaxSpawnHeight()
+    {
+        return maxSpawnHeight;
+    }
+
+    public IEnumerator SpawnWave()
+    {
+        while (currentwaveIndex < enemyWave.Count)
         {
-            Debug.Log("u fucked up the spawn point refrence to enemies dumbass");
+            WaveData currentWave = enemyWave[currentwaveIndex];
+            //comment it for wave skip function in future
+            yield return new WaitForSecondsRealtime(enemyWave[currentwaveIndex].waveSpawnTime);
+
+
+
+            foreach (EnemySpawnData data in currentWave.enemySpawnData)
+            {
+                for (int i = 0; i < data.spawnCount; i++)
+                {
+                    GameObject spawnedEnemyRefrence = Instantiate(data.enemyPrefab,
+                                                      GetPositionWithRandomHeight(), data.enemyPrefab.transform.rotation,
+                                                      enemyGroupingObejctTransform);
+
+                    EnemyMovement movement = spawnedEnemyRefrence.GetComponent<EnemyMovement>();
+                    if (movement != null)
+                    {
+                        movement.SetPath(waypointManager);
+                    }
+                    yield return new WaitForSecondsRealtime(data.EnemySpawnDelay);
+                }
+            }
+            currentwaveIndex++;
+            
         }
-        SpawnEnemies();
+        Debug.Log("All waves Finished");
+        transform.parent.GetComponent<EnemySpawnerManager>().SetIthSpawnerFinishedSpanwning(spawnerIndexInSpawnerManager);
+
     }
 
-    public void SpawnEnemies()
+    Vector3 GetPositionWithRandomHeight()
     {
-        int randomHeight = Random.Range(minSpawnHeight,maxSpawnHeight+1);
-
-        Vector3 spawnPosition = new Vector3(spawnPoint.position.x, randomHeight, spawnPoint.position.z);
-
-        GameObject enemy = Instantiate(enemyPrefabs[0], spawnPosition, Quaternion.identity,enemyGroupingObejctTransform);
-
+        float randomHeight = Random.Range(minSpawnHeight, maxSpawnHeight);
+        return new Vector3(spawnPoint.position.x, randomHeight, spawnPoint.position.z);
     }
+
+    
 }

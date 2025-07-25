@@ -36,7 +36,7 @@ public class Timer : MonoBehaviour
     public void RunSwitchBaseBLockOptionTimer()
     {
         timerValue-= Time.deltaTime;
-        Debug.Log(timerValue);
+        //Debug.Log(timerValue);
         if (timerValue > 0)
         {
             fillFraction = timerValue / timeForContinuing;

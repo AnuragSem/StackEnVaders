@@ -1,11 +1,12 @@
-using System.Collections;
-using System.Collections.Generic;
+using System;
 using UnityEngine;
 
 public class EnemyMovement : MonoBehaviour
 {
-    Vector3 staticMoveVector = new Vector3(1, 0, -1);
-    Vector3 moveDirection;
+    public static event Action OnEnemyReachedGoal;
+
+    WaypointManager waypointPath;
+    int currentTargetWaypointIndex  = 0;
 
     [SerializeField]float moveSpeed = 3f;
 
@@ -14,12 +15,45 @@ public class EnemyMovement : MonoBehaviour
         MoveEnemy();
     }
 
+    public void SetESpeed(float speed)
+    { 
+        moveSpeed = speed;
+    }
+
+    public void SetPath(WaypointManager path)
+    { 
+        waypointPath = path;
+    }
+
     void MoveEnemy()
     {
-        transform.Translate(staticMoveVector * moveSpeed * Time.deltaTime);
+        if (waypointPath == null) return;
+
+        Transform targetWaypoint = waypointPath.GetWaypointAtIndex(currentTargetWaypointIndex);
+        if (targetWaypoint != null)
+        {
+            Vector3 targetWaypointPosition = new Vector3(targetWaypoint.position.x, transform.position.y,
+                                                    targetWaypoint.position.z);
+            transform.position = Vector3.MoveTowards(transform.position,
+                                                    targetWaypointPosition,
+                                                    moveSpeed * Time.deltaTime);
+            if (Vector3.Distance(transform.position, targetWaypointPosition) < 0.1f)
+            { 
+                currentTargetWaypointIndex++;
+                
+                if (currentTargetWaypointIndex >= waypointPath.GetWaypointCount())
+                {
+                    OnReachGoal();
+                }
+            }
+        }
     }
-    public void SetMoveDirection(Vector3 direction)
+
+    void OnReachGoal()
     {
-        moveDirection = direction;
+        OnEnemyReachedGoal?.Invoke();
+
+        Debug.Log("reached goal");
+        Destroy(gameObject);
     }
 }

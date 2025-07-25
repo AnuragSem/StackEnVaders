@@ -1,11 +1,10 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 public class BlockSpawner : MonoBehaviour
 {
+    public int currentActiveBaseBlockIndex = -1;
     [SerializeField] Block spawnableBlockPrefab;
+    [SerializeField] Transform BaseBlockParent;
 
     [SerializeField] bool spawnOnXAxis;// initial spawn to z preferably
 
@@ -16,10 +15,10 @@ public class BlockSpawner : MonoBehaviour
     {
         orignalVolume = spawnableBlockPrefab.transform.localScale.x * spawnableBlockPrefab.transform.localScale.y *
                               spawnableBlockPrefab.transform.localScale.z;
-        Debug.Log("orignal volume " + orignalVolume);
+        //Debug.Log("orignal volume " + orignalVolume);
     }
 
-    public void SpawnBlock()
+    public void SpawnBlock(Transform spawnedBlockParent)
     {
 
         if (Block.currentBlock != null)
@@ -29,11 +28,7 @@ public class BlockSpawner : MonoBehaviour
 
         Block previousBlock = Block.previousBlock;
 
-        var blockInstance = Instantiate(spawnableBlockPrefab);
-        
-        
-
-
+        var blockInstance = Instantiate(spawnableBlockPrefab,spawnedBlockParent);
         Block.SetCurrentBlock(blockInstance);
 
         //sets newly's spawned block's scale to the last's blocks scale
@@ -72,9 +67,9 @@ public class BlockSpawner : MonoBehaviour
 
     }
 
-    private void OnDrawGizmos()
-    {
-        Gizmos.color = Color.green;
-        Gizmos.DrawWireCube(transform.position,spawnableBlockPrefab.transform.localScale);
-    }
+    //private void OnDrawGizmos()
+    //{
+    //    Gizmos.color = Color.green;
+    //    Gizmos.DrawWireCube(transform.position,spawnableBlockPrefab.transform.localScale);
+    //}
 }

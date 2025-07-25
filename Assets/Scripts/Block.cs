@@ -4,22 +4,32 @@ using UnityEngine;
 
 public class Block : MonoBehaviour
 {
+    //health related parameters
+    [Header("Health")]
+    [SerializeField] float baseBlockHP = 1000f;
+    [SerializeField] float maxBlockHealth = 100f;
+    private float currentBlockHealth;
+
+    [Header("Position in stack")]
+    public int indexInStack = -1;
+
+    [Header("Speed")]
+    [SerializeField] bool isMoving = true;
+    [SerializeField] float moveSpeed = 1f;
+    [SerializeField] float minMoveSpeed = 1f;
+    [SerializeField] float speedIncrementAfterEachBLock = 0.005f;
+    [SerializeField] float maxMoveSpeed = 5f;
+
+    [Header("Type of Block")]
+    [SerializeField] bool isBaseBlock = false;
     public static Block currentBlock { get; private set; }
     public static Block previousBlock { get; private set; }
-    [SerializeField] float moveSpeed = 1f;
-    [SerializeField] bool isMoving = true;
-    [SerializeField] bool isBaseBlock = false;
     bool moveAlongX = false;
-
     private Coroutine autostopCoroutine;
-
     //related to color
     Renderer blockRenderer;
 
-    //health related parameters
-    private float maxBlockHealth = 100f;
-    private float currentBlockHealth;
-
+    //setters
     public static void SetCurrentBlock(Block block)
     {
         currentBlock = block;
@@ -28,25 +38,62 @@ public class Block : MonoBehaviour
     {
         previousBlock = block;
     }
+    
+    public void SetCurrentHealth(float healthToBe)
+    {
+        currentBlockHealth = healthToBe;
+    }
 
     public void SetMoveDirection(bool moveTowardsX)
     {
         moveAlongX = moveTowardsX;
     }
 
-    private void Awake()
-    {
-        blockRenderer = GetComponent<Renderer>();
+    public void SetSpeed(float newSpeed)
+    { 
+        moveSpeed = newSpeed;
     }
+
+    //getters
+    public float GetCurrentHeath()
+    {
+        return currentBlockHealth;
+    }
+
+    public float CalculateSpeed()
+    {
+        if (LevelManager.Instance != null)
+        {
+            int stackHeight = LevelManager.Instance.GetStackHeight();
+            return Mathf.Clamp((minMoveSpeed + (speedIncrementAfterEachBLock * stackHeight)), minMoveSpeed, maxMoveSpeed);
+        }
+        else
+        {
+            Debug.Log("problem with level manager .instance");
+            return minMoveSpeed;
+        }
+    }
+
     private void OnEnable()
     {
+        //sets colour
         SetBlockColor();
-        if(autostopCoroutine != null)
+        //sets speed
+        SetSpeed(CalculateSpeed());
+
+        //responsible for autostopping block 
+        if (autostopCoroutine != null)
         {
             StopCoroutine(autostopCoroutine);
         }
         autostopCoroutine = StartCoroutine(StartAutoStopSequence());
     }
+
+    private void Awake()
+    {
+        blockRenderer = GetComponent<Renderer>();
+    }
+    
     private void Update()
     {
         if (isMoving)
@@ -57,15 +104,16 @@ public class Block : MonoBehaviour
 
     public void SetHP(float refrenceVolume,float currentVolume)
     {
-        if (isBaseBlock)
+        if (gameObject.tag == "BaseBlock")
         {
-            currentBlockHealth = maxBlockHealth;
-            Debug.Log("base block health" + currentBlockHealth);
-            return;
+            currentBlockHealth = baseBlockHP;
         }
-       currentBlockHealth = (currentVolume/refrenceVolume)*maxBlockHealth;
-        Debug.Log($"current health {currentBlockHealth}");
-
+        else
+        {
+            currentBlockHealth = (currentVolume / refrenceVolume) * maxBlockHealth;
+            //Display health of block after placing it
+            //Debug.Log($"current health {currentBlockHealth}");
+        }
     }
 
     private void MoveBlock()
@@ -88,7 +136,7 @@ public class Block : MonoBehaviour
             StopCoroutine(autostopCoroutine);
             autostopCoroutine = null;
         }
-        Debug.Log("stop triggered by" + this.gameObject.name);                                                       
+        //Debug.Log("stop triggered by" + this.gameObject.name);                                                       
         isMoving = false;
         moveSpeed = 0f;
 
@@ -106,7 +154,7 @@ public class Block : MonoBehaviour
             //no overlap GameOVer
             StateManager.instance.isPlaying = false;
             StateManager.instance.isGameOver = true;
-            GameManager.Instance.HandleGameOver();
+            LevelManager.Instance.HandleGameOver();
         }
         else
         {
@@ -159,7 +207,7 @@ public class Block : MonoBehaviour
 
     private void SpawnDropBlock(float fallingBlockPosition, float fallingBlockSize, bool isOnXAxis)
     {
-        Debug.Log("dropped block");
+        
         var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
         cube.GetComponent<Renderer>().material.color = blockRenderer.material.color;
         if (isOnXAxis)
@@ -201,8 +249,36 @@ public class Block : MonoBehaviour
         {
             yield break;
         }   
-        yield return new WaitForSeconds(GameManager.Instance.GetTimeForAutoStoping());
+        yield return new WaitForSeconds(LevelManager.Instance.GetTimeForAutoStoping());
         Debug.Log("auto Stopped");
         Stop();
+    }
+
+    public void TakeDmg(float dmg)
+    { 
+        currentBlockHealth -= dmg;
+        Debug.Log($"{gameObject.name} hp : {currentBlockHealth}");
+        if (currentBlockHealth <= 0)
+        {
+            DestroyBlock();
+        }
+    }
+
+    private void DestroyBlock()
+    {
+        DestroyBlocksAbove();
+        Destroy(gameObject);
+    }
+
+    void DestroyBlocksAbove()
+    {
+        Transform stackParent;
+        int childCount;
+        stackParent = transform.parent;
+        childCount = stackParent.transform.childCount;
+        for (int i = indexInStack + 1; i < childCount; i++)
+        { 
+            Destroy(stackParent.GetChild(i).gameObject);
+        }
     }
 }

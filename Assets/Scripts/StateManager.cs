@@ -7,10 +7,9 @@ public class StateManager : MonoBehaviour
     public static StateManager instance;
 
     public bool isPlaying;
-    public bool isMenuActive;
-    public bool isContinueTimerRunning;
+    public bool? isVictorious = null;
     public bool isGameOver;
-
+    
     private void Awake()
     {
         if (instance == null)

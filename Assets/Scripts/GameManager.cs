@@ -3,14 +3,12 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using System.Collections;
+using System.Text;
+using System.Runtime.CompilerServices;
 
 public class GameManager : MonoBehaviour
 {
-    public int score = 0;
-
-    public int stackHeight = 0;
-
-    [SerializeField] float timeForAutoStoppingBlock = 6f;
+    [Header("GO Refrences")]
 
     [SerializeField] BackgroundColourChanger bgColourChanger;
 
@@ -22,72 +20,6 @@ public class GameManager : MonoBehaviour
 
     [SerializeField] StateManager stateManager;
 
-    public static bool isUsingXSpawner { get; private set; } = true;
-
-    public static GameManager Instance { get; private set; }
-
-    private void Awake()
-    {
-        if(Instance == null)
-            Instance = this;
-        else
-            Destroy(gameObject);
-    }
-
-    private void Start()
-    {
-        levelManager.GetBaseBlocksPositions();
-        uiManager.SetScore(score);
-
-        StartCoroutine(CountDownBeforeStartingGame());
-    }
-
-    public float GetTimeForAutoStoping()
-    {
-        return timeForAutoStoppingBlock;
-    }
-
-    public void StartCountDownCoroutie()
-    {
-        StartCoroutine(CountDownBeforeStartingGame());
-    }
-    void OnCountdownEndsAfterBaseBlockSwitch()
-    {
-        levelManager.SpawnBlockOnZ();
-        stateManager.isPlaying = true;
-    }
-    
-
-    public IEnumerator CountDownBeforeStartingGame()
-    {
-        stateManager.isPlaying = false;
-        int countdown = 3;
-
-        levelManager.SetNextBaseBlock();
-        levelManager.SetSpawnerPosition();
-        uiManager.countdownText.color = Color.red;
-        uiManager.DisplayCountdownText(true);
-
-        while (countdown > 0)
-        {
-            uiManager.countdownText.text = countdown.ToString();
-            yield return new WaitForSeconds(1f);
-            countdown--;
-        }
-        uiManager.countdownText.color = Color.green;
-        uiManager.countdownText.text = "GO!";
-
-        yield return new WaitForSeconds(1f);
-        uiManager.DisplayCountdownText(false);
-        uiManager.countdownText.text = "3";
-
-
-        OnCountdownEndsAfterBaseBlockSwitch();
-    }
-
-
-    //Actual Controls
-
     public void OnScreenTapped(InputAction.CallbackContext ctx)
     {
         if (stateManager.isPlaying && ctx.performed && Block.currentBlock != null)
@@ -96,64 +28,48 @@ public class GameManager : MonoBehaviour
 
             if (stateManager.isPlaying)
             {
-                score++;
-                stackHeight++;
-                uiManager.SetScore(score);
+                levelManager.score++;
+                levelManager.stackHeight++;
+                Block.currentBlock.indexInStack  = levelManager.stackHeight;
+
+                Debug.Log(Block.currentBlock.indexInStack);
+                uiManager.SetScore(levelManager.score);
 
                 //sets current block to camera's target
                 cameraController.SetTarget(Block.previousBlock.transform);
 
                 //changes bg colours
-                bgColourChanger.UpdateStackHeight(stackHeight);
+                bgColourChanger.UpdateStackHeight(levelManager.stackHeight);
 
                 //spawns new block
-                SpawnBlock();
+                levelManager.SpawnBlock();
             }
         }
     }
 
-
-    //Spawner Controller
-
-    void SpawnBlock()
+    public void OnScrolling(InputAction.CallbackContext ctx)
     {
-        if (isUsingXSpawner)
-            levelManager.SpawnBlockOnX();
-        else
-            levelManager.SpawnBlockOnZ();
-
-        isUsingXSpawner = !isUsingXSpawner;// for alternating
+        float inputScrollValue;
+        if (ctx.performed)
+        {
+            inputScrollValue = ctx.ReadValue<float>();
+            float sv = inputScrollValue/Math.Abs(inputScrollValue);
+            cameraController.Zoom(sv);
+            //Debug.Log("Scroll value " + sv);
+        }
     }
 
-
-
-    // Game over Handlers
-
-
-    public void HandleGameOver()
+    public void OnPanning(InputAction.CallbackContext ctx)
     {
-        stateManager.isPlaying = false;
-        Debug.Log(score);
-        uiManager.SetPlayPauseUIMenuScore(score);
-
-
-        if (!levelManager.IsLastCube())
+        if (ctx.started)
         {
-
-            Debug.Log("triggered W BB");
-            uiManager.OnGameOverWithBaseBlocksRemaining();
-
+            //Debug.Log("started panning");
+            cameraController.OnPanStart();
         }
-        else
+        if (ctx.canceled)
         {
-            Debug.Log("triggered No BB");
-            uiManager.OnGameOverWithNOBaseBlockRemaining(false);
-
+            //Debug.Log("ended panning");
+            cameraController.OnPanStop();
         }
-
-    }
-
-    private void StackGameOver()
-    {
     }
 }
