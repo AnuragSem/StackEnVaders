@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering.PostProcessing;
 
 public class LightingControls : MonoBehaviour
 {
@@ -34,10 +35,42 @@ public class LightingControls : MonoBehaviour
     Color trackedEquatorColor;
     Color trackedGroundColor;
 
+
+    //Post Processing 
+    [SerializeField] PostProcessVolume ppVolume;
+
+    private ColorGrading colorGrading;
+    private Vignette vignette;
+    private AmbientOcclusion ambientOcclusion;
+
+    float trackedCGTemprature;
+    float trackedCGTint;
+    float trackedCGPostExposure;
+    float trackedCGSaturation;
+    float trackedCGContrast;
+
+    float trackedVignetteIntensity;
+    float trackedVignetteSmoothness;
+
+    float trackedAOIntensity;
+    float trackedAORadius;
+
     //optional 
     float trackedSkyExposure;
     float trackedEquatorExposure;
     float trackedGroundExposure;
+
+    private void Awake()
+    {
+        if (ppVolume.profile.TryGetSettings(out colorGrading) == false)
+            Debug.LogError("Color Adjustments not found on Post-Processing Volume!");
+
+        if (ppVolume.profile.TryGetSettings(out vignette) == false)
+            Debug.LogError("Vignette not found on Post-Processing Volume!");
+
+        if (ppVolume.profile.TryGetSettings(out ambientOcclusion) == false)
+            Debug.LogError("Ambient Occlusion not found on Post-Processing Volume!");
+    }
 
     private void Start()
     {
@@ -61,6 +94,18 @@ public class LightingControls : MonoBehaviour
         trackedEquatorColor = RenderSettings.ambientEquatorColor;
         trackedGroundColor = RenderSettings.ambientGroundColor;
 
+        trackedCGTemprature = colorGrading.temperature.value;
+        trackedCGTint = colorGrading.tint.value;
+        trackedCGPostExposure = colorGrading.postExposure.value;
+        trackedCGSaturation = colorGrading.saturation.value;
+        trackedCGContrast = colorGrading.contrast.value;
+
+        trackedVignetteIntensity = vignette.intensity.value;
+        trackedVignetteSmoothness = vignette.smoothness.value;
+
+        trackedAOIntensity = ambientOcclusion.intensity.value;
+        trackedAORadius = ambientOcclusion.radius.value;
+
         CalculateLightAttributesForCurrentBackground(0);
     }
 
@@ -81,36 +126,60 @@ public class LightingControls : MonoBehaviour
                 float targetAngle = Mathf.LerpAngle(from.desiredAngle, to.desiredAngle, t);
 
                 float targetSunIntensity = Mathf.Lerp(from.desiredSunIntensity, to.desiredSunIntensity, t);
-                float targetMoonIntensity = Mathf.Lerp(from.desiredMoonIntensity, to.desiredMoonIntensity, t);
-
                 Color targetSunColor = Color.Lerp(from.desiredSunColor, to.desiredSunColor, t);
+
+                float targetMoonIntensity = Mathf.Lerp(from.desiredMoonIntensity, to.desiredMoonIntensity, t);
                 Color targetMoonColor = Color.Lerp(from.desiredMoonColor, to.desiredMoonColor, t);
-
-
-                //Ambient Lighting
-                Color targetSkyColor  = Color.Lerp(from.skyColor, to.skyColor, t);
-                Color targetEquatorColor = Color.Lerp(from.equatorColor, to.equatorColor, t);
-                Color targetGroundColor = Color.Lerp(from.groundColor, to.groundColor, t);
-
 
                 TargetLightAttributes sunTarget = new TargetLightAttributes(targetAngle, targetSunIntensity, targetSunColor);
                 TargetLightAttributes moonTarget = new TargetLightAttributes(targetAngle + moonOffsetFromSunOnX,targetMoonIntensity, targetMoonColor);
 
-                TargetAmbientLightAttributes ambientLightTarget = new TargetAmbientLightAttributes(targetSkyColor, targetEquatorColor, targetGroundColor);
+                TargetAmbientLightAttributes ambientLightTarget = CalculateTargetValuesForAmbientLighting(from, to, t);
+                TargetPostProcessingSettings postProcessingVolumeTarget = CalculateTargetValuesForPostProcessingSettings(from, to, t);
 
 
                 if (currentRotationCoroutine != null)
                 {
                     StopCoroutine(currentRotationCoroutine);
                 }
-                currentRotationCoroutine =StartCoroutine(InterpolateLightAttributes(sun,moon,sunTarget,moonTarget,ambientLightTarget,timeToRotate));
+                currentRotationCoroutine =StartCoroutine(InterpolateLightAttributes(sun,moon,sunTarget,moonTarget,ambientLightTarget,postProcessingVolumeTarget,timeToRotate));
                 break;
 
             }
         }
     }
 
-    IEnumerator InterpolateLightAttributes(Light sun ,Light moon,TargetLightAttributes sunTarget,TargetLightAttributes moonTarget , TargetAmbientLightAttributes ambientLightTarget, float duration)
+    TargetPostProcessingSettings CalculateTargetValuesForPostProcessingSettings(DayPhaseData from, DayPhaseData to, float t)
+    { 
+        float targetCGTemp = Mathf.Lerp(from.cgTemperature, to.cgTemperature, t);
+        float targetCGTint = Mathf.Lerp(from.cgTint, to.cgTint, t);
+        float targetCGExposure = Mathf.Lerp(from.cgPostExposure, to.cgPostExposure, t);
+        float targetCGSaturation = Mathf.Lerp(from.cgSaturation, to.cgSaturation, t);
+        float targetCGContrast = Mathf.Lerp(from.cgContrast, to.cgContrast, t);
+
+        float targetVigIntensity = Mathf.Lerp(from.vignetteIntensity, to.vignetteIntensity, t);
+        float targetVigSmoothness = Mathf.Lerp(from.vignetteSmoothness,to.vignetteSmoothness, t);
+        
+        float targetAOIntensity = Mathf.Lerp(from.aoIntensity, to.aoIntensity, t);
+        float targetAORadius = Mathf.Lerp(from.aoRadius, to.aoRadius, t);
+
+        return new TargetPostProcessingSettings(targetCGTemp, targetCGTint,targetCGExposure, targetCGSaturation,targetCGContrast,
+                                                targetVigIntensity,targetVigSmoothness,targetAOIntensity,targetAORadius);
+
+    }
+
+    TargetAmbientLightAttributes CalculateTargetValuesForAmbientLighting(DayPhaseData from, DayPhaseData to, float t)
+    {
+        //Ambient Lighting
+        Color targetSkyColor = Color.Lerp(from.skyColor, to.skyColor, t);
+        Color targetEquatorColor = Color.Lerp(from.equatorColor, to.equatorColor, t);
+        Color targetGroundColor = Color.Lerp(from.groundColor, to.groundColor, t);
+
+        return (new TargetAmbientLightAttributes(targetSkyColor, targetEquatorColor, targetGroundColor));
+
+    }
+
+    IEnumerator InterpolateLightAttributes(Light sun ,Light moon,TargetLightAttributes sunTarget,TargetLightAttributes moonTarget , TargetAmbientLightAttributes ambientLightTarget,TargetPostProcessingSettings postProcessingVolumeEffectTarget, float duration)
     {
         float sunStart = trackedSunAngle;
         float moonStart = trackedMoonAngle;
@@ -124,6 +193,20 @@ public class LightingControls : MonoBehaviour
         Color ambientLightSkyColorStart = trackedSkyColor;
         Color ambientLightEquatorColorStart = trackedEquatorColor;
         Color ambientLightGroundColorStart = trackedGroundColor;
+
+        float ppCGTemperatureStart  = trackedCGTemprature;
+        float ppCGTintStart = trackedCGTint;
+        float ppCGPostExposureStart = trackedCGPostExposure;
+        float ppCGSaturationStart = trackedCGSaturation;
+        float ppCGContrastStart = trackedCGContrast;
+
+        float ppVigIntensityStart = trackedVignetteIntensity;
+        float ppVigSmoothnessStart = trackedVignetteSmoothness;
+
+        float ppAOIntensityStart = trackedAOIntensity;
+        float ppAORadiusStart  = trackedAORadius;
+
+
 
         if (sunTarget.intensity > 0f && !sun.gameObject.activeSelf)
             sun.gameObject.SetActive(true);
@@ -172,6 +255,35 @@ public class LightingControls : MonoBehaviour
             Color newGroundColor = Color.Lerp(ambientLightGroundColorStart,ambientLightTarget.groundColor, t);
             trackedGroundColor = newGroundColor;
 
+            //PostProcessing Effect Settings
+            float newCGTemprature = Mathf.Lerp(ppCGTemperatureStart,postProcessingVolumeEffectTarget.cgTemperature, t);
+            trackedCGTemprature = newCGTemprature;
+
+            float newCGTint = Mathf.Lerp(ppCGTintStart,postProcessingVolumeEffectTarget.cgTint, t);
+            trackedCGTint = newCGTint;
+
+            float newCGPostExposure = Mathf.Lerp(ppCGPostExposureStart,postProcessingVolumeEffectTarget.cgPostExposure, t);
+            trackedCGPostExposure = newCGPostExposure;
+
+            float newCGSaturation = Mathf.Lerp(ppCGSaturationStart,postProcessingVolumeEffectTarget.cgSaturation, t);
+            trackedCGSaturation = newCGSaturation;
+
+            float newCGContrast = Mathf.Lerp(ppCGContrastStart,postProcessingVolumeEffectTarget.cgContrast, t);
+            trackedCGContrast = newCGContrast;
+
+            float newVigIntensity  = Mathf.Lerp(ppVigIntensityStart,postProcessingVolumeEffectTarget.vignetteIntensity, t);
+            trackedVignetteIntensity = newVigIntensity;
+
+            float newVigSmoothness = Mathf.Lerp(ppVigSmoothnessStart,postProcessingVolumeEffectTarget.vignetteSmoothness, t);
+            trackedVignetteSmoothness = newVigSmoothness;
+
+            float newAOIntensity = Mathf.Lerp(ppAOIntensityStart,postProcessingVolumeEffectTarget.aoIntensity, t);
+            trackedAOIntensity = newAOIntensity;
+
+            float newAORadius = Mathf.Lerp(ppAORadiusStart,postProcessingVolumeEffectTarget.aoRadius, t);
+            trackedAORadius= newAORadius;
+
+
             //apply the short rotation
             sun.transform.localEulerAngles = new Vector3(newSunAngle, initialSunY, initialSunZ);
             moon.transform.localEulerAngles = new Vector3(newMoonAngle, initialMoonY, initialMoonZ);
@@ -189,6 +301,19 @@ public class LightingControls : MonoBehaviour
             RenderSettings.ambientEquatorColor = newEquatorColor;
             RenderSettings.ambientGroundColor = newGroundColor;
 
+            //apply Post Processing Effect Settings
+            colorGrading.temperature.value = newCGTemprature;
+            colorGrading.tint.value = newCGTint;
+            colorGrading.postExposure.value = newCGPostExposure;
+            colorGrading.saturation.value = newCGSaturation;
+            colorGrading.contrast.value = newCGContrast;
+
+            vignette.intensity.value = newVigIntensity;
+            vignette.smoothness.value = newVigSmoothness;
+
+            ambientOcclusion.intensity.value = newAOIntensity;
+            ambientOcclusion.radius.value = newAORadius;
+
             yield return null;
         }
 
@@ -205,6 +330,18 @@ public class LightingControls : MonoBehaviour
         RenderSettings.ambientEquatorColor = ambientLightTarget.equatorColor;
         RenderSettings.ambientGroundColor = ambientLightTarget.groundColor;
 
+        colorGrading.temperature.value = postProcessingVolumeEffectTarget.cgTemperature;
+        colorGrading.tint.value = postProcessingVolumeEffectTarget.cgTint;
+        colorGrading.postExposure.value = postProcessingVolumeEffectTarget.cgPostExposure;
+        colorGrading.saturation.value = postProcessingVolumeEffectTarget.cgSaturation;
+        colorGrading.contrast.value = postProcessingVolumeEffectTarget.cgContrast;
+
+        vignette.intensity.value = postProcessingVolumeEffectTarget.vignetteIntensity;
+        vignette.smoothness.value = postProcessingVolumeEffectTarget.vignetteSmoothness;
+
+        ambientOcclusion.intensity.value = postProcessingVolumeEffectTarget.aoIntensity;
+        ambientOcclusion.radius.value = postProcessingVolumeEffectTarget.aoRadius;
+
         trackedSunAngle = sunTarget.angle;
         trackedSunIntensity = sunTarget.intensity;
         trackedSunColor = sunTarget.color;
@@ -216,6 +353,37 @@ public class LightingControls : MonoBehaviour
         trackedSkyColor = ambientLightTarget.skyColor;
         trackedEquatorColor = ambientLightTarget.equatorColor;
         trackedGroundColor = ambientLightTarget.groundColor;
+
+        trackedCGTemprature = postProcessingVolumeEffectTarget.cgTemperature;
+        trackedCGTint = postProcessingVolumeEffectTarget.cgTint;
+        trackedCGPostExposure = postProcessingVolumeEffectTarget.cgPostExposure;
+        trackedCGSaturation = postProcessingVolumeEffectTarget.cgSaturation;
+        trackedCGContrast = postProcessingVolumeEffectTarget.cgContrast;
+
+        trackedVignetteIntensity = postProcessingVolumeEffectTarget.vignetteIntensity;
+        trackedVignetteSmoothness = postProcessingVolumeEffectTarget.vignetteSmoothness;
+
+        trackedAOIntensity = postProcessingVolumeEffectTarget.aoIntensity;
+        trackedAORadius = postProcessingVolumeEffectTarget.aoRadius;
+
+        Debug.Log($@"
+--- Tracked Post Processing Values ---
+Color Grading:
+  Temperature     = {trackedCGTemprature}
+  Tint            = {trackedCGTint}
+  Post Exposure   = {trackedCGPostExposure}
+  Saturation      = {trackedCGSaturation}
+  Contrast        = {trackedCGContrast}
+
+Vignette:
+  Intensity       = {trackedVignetteIntensity}
+  Smoothness      = {trackedVignetteSmoothness}
+
+Ambient Occlusion:
+  Intensity       = {trackedAOIntensity}
+  Radius          = {trackedAORadius}
+-------------------------------------
+");
 
         if (sunTarget.intensity == 0f)
             sun.gameObject.SetActive(false);

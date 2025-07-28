@@ -96,7 +96,7 @@ public class LevelManager : MonoBehaviour
             List<Vector3> endpoints = cameraController.GetTheHorizontalBounds();
             if (endpoints.Count > 0)
             {
-                uiManager.SetSpawnHeightMarker(height, endpoints);
+                uiManager.SetSpawnHeightMarker(height + 1, endpoints);
                 uiManager.SetEnemyRelatedReminder($"Max Enemy Spawn Height: {height}",Color.white);
             }
             else

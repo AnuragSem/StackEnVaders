@@ -122,8 +122,11 @@ MonoBehaviour:
   baseBlockHP: 1000
   maxBlockHealth: 100
   indexInStack: -1
-  moveSpeed: 0
   isMoving: 0
+  moveSpeed: 0
+  minMoveSpeed: 1
+  speedIncrementAfterEachBLock: 0.005
+  maxMoveSpeed: 5
   isBaseBlock: 1
 --- !u!114 &565606472808789485
 MonoBehaviour:
