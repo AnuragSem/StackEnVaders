@@ -9,7 +9,7 @@
                     "name": "ScreenTapped",
                     "type": "Button",
                     "id": "fe7a9430-13dc-4b72-9852-ef2d0ae14b97",
-                    "expectedControlType": "Button",
+                    "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
@@ -27,7 +27,7 @@
                     "name": "Pan",
                     "type": "Value",
                     "id": "3e4afa90-8e9b-4b03-aff1-e6be8f8b7049",
-                    "expectedControlType": "Button",
+                    "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": true
@@ -58,6 +58,17 @@
                 },
                 {
                     "name": "",
+                    "id": "1d7b2153-2b0f-4be0-bc81-2f1169eb8229",
+                    "path": "<Keyboard>/space",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ScreenTapped",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "32480670-0742-4f12-b15a-e7fe1902c99c",
                     "path": "<Mouse>/scroll/y",
                     "interactions": "",
@@ -66,6 +77,39 @@
                     "action": "Zoom",
                     "isComposite": false,
                     "isPartOfComposite": false
+                },
+                {
+                    "name": "1D Axis",
+                    "id": "96f90a82-62a9-4636-b45b-b9ca8d55f0b1",
+                    "path": "1DAxis",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Zoom",
+                    "isComposite": true,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "Negative",
+                    "id": "351e4168-25d8-4cec-b906-0c96f172499e",
+                    "path": "<Keyboard>/numpadMinus",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard&Mouse",
+                    "action": "Zoom",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "Positive",
+                    "id": "e3241e7e-a58f-4b93-b531-f695c77f9663",
+                    "path": "<Keyboard>/numpadPlus",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Zoom",
+                    "isComposite": false,
+                    "isPartOfComposite": true
                 },
                 {
                     "name": "",

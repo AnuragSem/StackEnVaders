@@ -1,25 +1,36 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class BlockSpawner : MonoBehaviour
 {
-    public int currentActiveBaseBlockIndex = -1;
-    [SerializeField] Block spawnableBlockPrefab;
-    [SerializeField] Transform BaseBlockParent;
 
-    [SerializeField] bool spawnOnXAxis;// initial spawn to z preferably
+    [SerializeField] Block defaultSpawnableBlockPrefab;
+    GameObject lastSpawnedBlock;
 
-    float orignalVolume;
+    [Header("Movement path")]
+    [SerializeField] List<WaypointManager> possiblePaths;
+    WaypointManager selectedPath = null;
+
+
+    float orignalPrefabsVolume;
 
     float currentBlockVolume;
+
     private void Start()
     {
-        orignalVolume = spawnableBlockPrefab.transform.localScale.x * spawnableBlockPrefab.transform.localScale.y *
-                              spawnableBlockPrefab.transform.localScale.z;
-        //Debug.Log("orignal volume " + orignalVolume);
+        orignalPrefabsVolume = CalculateVolume(defaultSpawnableBlockPrefab);
+    }
+    float CalculateVolume(Block block)
+    { 
+        float volume =  block.transform.localScale.x * block.transform.localScale.y * block.transform.localScale.z;
+        return volume;
     }
 
-    public void SpawnBlock(Transform spawnedBlockParent)
+    public void SpawnBlock(Vector3 currentBaseBlockPosition,Transform spawnedBlockParent, Block blockPrefab = null)
     {
+
+        if (blockPrefab == null)
+            blockPrefab = defaultSpawnableBlockPrefab;
 
         if (Block.currentBlock != null)
         { 
@@ -28,48 +39,74 @@ public class BlockSpawner : MonoBehaviour
 
         Block previousBlock = Block.previousBlock;
 
-        var blockInstance = Instantiate(spawnableBlockPrefab,spawnedBlockParent);
-        Block.SetCurrentBlock(blockInstance);
 
-        //sets newly's spawned block's scale to the last's blocks scale
-        blockInstance.transform.localScale = new Vector3(previousBlock.transform.localScale.x,
-                                                        blockInstance.transform.localScale.y,
-                                                        previousBlock.transform.localScale.z);
+        //this is soo scuffed OMG
 
-        currentBlockVolume = blockInstance.transform.localScale.x*
-                             blockInstance.transform.localScale.y*
-                             blockInstance.transform.localScale.z;
-
-        //for custom position of spawned block
-        float x = this.spawnOnXAxis  ? transform.position.x: previousBlock.transform.position.x;
-        float previousBlockHeight = previousBlock.transform.localScale.y;
-        float spawnedBlockHeight = blockInstance.transform.localScale.y;
-        float z = !this.spawnOnXAxis ? transform.position.z: previousBlock.transform.position.z;
-        
-        //actually setting the position
-        blockInstance.transform.position =  new Vector3(x,
-                    previousBlock.transform.position.y + (previousBlockHeight / 2) + (spawnedBlockHeight / 2),
-                                                        z);
-
-        //sets hp
-        blockInstance.SetHP(orignalVolume,currentBlockVolume);
-
-
-        if (this.spawnOnXAxis)
+        selectedPath = null;
+        if (possiblePaths == null)
         {
-            blockInstance.SetMoveDirection(true);
+            Debug.Log("no paths assigned for blocks to follow");
+            return;
         }
         else
-        {
-            blockInstance.SetMoveDirection(false);
+        { 
+            selectedPath = (possiblePaths.Count == 1)? possiblePaths[0] : possiblePaths[Random.Range(0,possiblePaths.Count)];
+
+            if (selectedPath.GetWaypointCount() < 3 && selectedPath.GetTrackingIndex() < 0)
+            {
+                Debug.LogError(
+                                $"[Path Error] Invalid path setup! WaypointCount = {selectedPath.GetWaypointCount()}," +
+                                $" TrackingIndex = {selectedPath.GetTrackingIndex()}"
+                              );
+                return;
+            }
+            else
+            {
+                selectedPath.SetWaypointPositionAtTrackedIndex(previousBlock.transform.position);
+            }
         }
 
+        
+        float previousBlockHeight = previousBlock.transform.localScale.y;
+        float spawnedBlockHeight = blockPrefab.transform.localScale.y;
+        float stackHeight = previousBlock.transform.position.y;
 
+        Vector3 spawnPos = transform.position;
+        spawnPos.y = previousBlock.transform.position.y + (previousBlockHeight / 2) + (spawnedBlockHeight / 2);
+
+        var blockInstance = Instantiate(blockPrefab,spawnPos,Quaternion.identity,spawnedBlockParent);
+
+        Block.SetCurrentBlock(blockInstance);
+
+
+        
+
+        if (!HasCustomScaling(blockInstance))
+        {
+            // sets newly's spawned block's scale to the last's blocks scale
+            blockInstance.transform.localScale = new Vector3(previousBlock.transform.localScale.x,
+                                                        blockInstance.transform.localScale.y,
+                                                        previousBlock.transform.localScale.z);
+        }
+
+        //Calculatevolume
+        currentBlockVolume = CalculateVolume(blockInstance);
+        //sets hp
+        blockInstance.SetHP(orignalPrefabsVolume, currentBlockVolume);
+
+        
+        blockInstance.InitializeMovement(selectedPath);
+
+    }
+
+    bool HasCustomScaling(Block block)
+    {
+        return block.CompareTag("NoScale");
     }
 
     //private void OnDrawGizmos()
     //{
     //    Gizmos.color = Color.green;
-    //    Gizmos.DrawWireCube(transform.position,spawnableBlockPrefab.transform.localScale);
+    //    Gizmos.DrawWireCube(transform.position, defaultSpawnableBlockPrefab.transform.localScale);
     //}
 }

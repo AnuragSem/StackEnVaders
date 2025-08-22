@@ -74,7 +74,7 @@ public class UIManager : MonoBehaviour
         LevelSelectPanel.SetActive(false);
     }
 
-    public void SetSpawnHeightMarker(int height,List<Vector3> EndPts)
+    public void SetSpawnHeightMarker(float height,List<Vector3> EndPts)
     {
         LineRenderer lineRenderer = enemySpawnHeightMarker.GetComponent<LineRenderer>();
 

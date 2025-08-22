@@ -42,7 +42,7 @@ public class GameManager : MonoBehaviour
                 bgColourChanger.UpdateStackHeight(levelManager.stackHeight);
 
                 //spawns new block
-                levelManager.SpawnBlock();
+                levelManager.SpawnNextBlock();
             }
         }
     }

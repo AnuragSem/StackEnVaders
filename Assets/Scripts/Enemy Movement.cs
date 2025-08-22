@@ -27,7 +27,11 @@ public class EnemyMovement : MonoBehaviour
 
     void MoveEnemy()
     {
-        if (waypointPath == null) return;
+        if (waypointPath == null)
+        {
+            Debug.Log("no path for eney to follow");
+            return;
+        } 
 
         Transform targetWaypoint = waypointPath.GetWaypointAtIndex(currentTargetWaypointIndex);
         if (targetWaypoint != null)

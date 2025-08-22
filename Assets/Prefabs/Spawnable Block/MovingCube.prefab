@@ -30,7 +30,7 @@ Transform:
   m_GameObject: {fileID: 7277638580594615031}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.5, z: -3.07}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 2, y: 1, z: 2}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -125,7 +125,7 @@ MonoBehaviour:
   isMoving: 1
   moveSpeed: 1
   minMoveSpeed: 1
-  speedIncrementAfterEachBLock: 0.01
+  speedIncrementAfterEachBLock: 0.05
   maxMoveSpeed: 5
   isBaseBlock: 0
 --- !u!114 &5305626447461564098
@@ -135,7 +135,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7277638580594615031}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2a8acde21814df048b15f1319de81572, type: 3}
   m_Name: 

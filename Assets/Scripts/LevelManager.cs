@@ -6,6 +6,15 @@ using UnityEngine;
 
 public class LevelManager : MonoBehaviour
 {
+    [System.Serializable]
+    public class BlockSpawnerInfo
+    {
+        public BlockSpawner spawner;
+        public Vector3 offset;
+    }
+
+
+
     [Header("Game Variables")]
     int currentBaseBlockIndex;
     public int score = 0;
@@ -33,11 +42,34 @@ public class LevelManager : MonoBehaviour
     
 
     [Header("block Spawner")]
-    [SerializeField] BlockSpawner blockSpawnerOnX;
-    [SerializeField] BlockSpawner blockSpawnerOnZ;
+    [SerializeField] List<BlockSpawnerInfo> mandatorySpawnerList;
+    int mandatorySpawnerListIndex = 0;
+
+    [SerializeField] List<BlockSpawnerInfo> specialSpawnerList;
+    int specialSpawnerListIndex = 0;
+
+    //[SerializeField] BlockSpawner blockSpawnerOnX;
+    //[SerializeField] BlockSpawner blockSpawnerOnZ;
+    //[SerializeField] BlockSpawner blockSpawnerOnX_Z;
     
-    [SerializeField] Vector3 distanceOfSpawnerOnXAxisFromCurBaseBlock;
-    [SerializeField] Vector3 distanceOfSpawnerOnZAxisFromCurBaseBlock;
+    //[SerializeField] Vector3 distanceOfSpawnerOnXAxisFromCurBaseBlock;
+    //[SerializeField] Vector3 distanceOfSpawnerOnZAxisFromCurBaseBlock;
+    //[SerializeField] Vector3 distanceOfSpawnerOnX_ZAxisFromCurBaseBlock;
+
+    [Header("Spawner Settings")]
+    [Range(0f, 1f)]
+    [SerializeField] float specialSpawnerActivationChance = 0.2f;
+    [SerializeField] int maxFrequencyForSpecialSpawnerInARow = 1;
+    int specialSpawnerConsecutiveCount = 0;
+
+
+    private BlockSpawner lastUsedSpawner = null;
+
+    private int currentSpawnerIndex;
+
+
+    [Header("Corrective offsets")]
+    [SerializeField] float enemySpawnHeightMarkerOffset = 1.5f;
 
     private void OnEnable()
     {
@@ -91,12 +123,13 @@ public class LevelManager : MonoBehaviour
     {
 
         int height = enemySpawnerManager.GetTheMaxHeightWhereEnemiesCanSpawn();
+
         if (height >= 0)
         {
             List<Vector3> endpoints = cameraController.GetTheHorizontalBounds();
             if (endpoints.Count > 0)
             {
-                uiManager.SetSpawnHeightMarker(height + 1, endpoints);
+                uiManager.SetSpawnHeightMarker(height + enemySpawnHeightMarkerOffset, endpoints);
                 uiManager.SetEnemyRelatedReminder($"Max Enemy Spawn Height: {height}",Color.white);
             }
             else
@@ -147,7 +180,7 @@ public class LevelManager : MonoBehaviour
     }
     void OnCountdownEndsAfterBaseBlockSwitch()
     {
-        SpawnBlock();
+        SpawnNextBlock();
         stateManager.isPlaying = true;
     }
     public void SetNextBaseBlock()
@@ -176,29 +209,91 @@ public class LevelManager : MonoBehaviour
 
     public void SetSpawnerPosition()
     {
-        blockSpawnerOnX.transform.position = baseBlockParentTransform[currentBaseBlockIndex].position + distanceOfSpawnerOnXAxisFromCurBaseBlock;
-        blockSpawnerOnZ.transform.position = baseBlockParentTransform[currentBaseBlockIndex].position + distanceOfSpawnerOnZAxisFromCurBaseBlock;
-    }
+        Vector3 curBaseBLockPosition = baseBlockParentTransform[currentBaseBlockIndex].position;
 
-    public void SpawnBlock()
-    {
-        if (isUsingXSpawner)
-            SpawnBlockOnX();
+        if (mandatorySpawnerList!=null)
+        {
+            foreach (var m in mandatorySpawnerList)
+            { 
+                m.spawner.transform.position = curBaseBLockPosition + m.offset;
+            }
+        }
         else
-            SpawnBlockOnZ();
+            Debug.Log("mandatory spawner not set in list");
 
-        isUsingXSpawner = !isUsingXSpawner;// for alternating
+        if (specialSpawnerList!=null)
+        {
+            foreach (var s in specialSpawnerList)
+            { 
+                s.spawner.transform.position = curBaseBLockPosition + s.offset;
+            }
+            
+        }
+        else
+            Debug.Log("special spawner not set in list");
+
     }
 
-    public void SpawnBlockOnX()
+    public void SpawnNextBlock()
     {
-        blockSpawnerOnX.SpawnBlock(baseBlockParentTransform[currentBaseBlockIndex]);
+        BlockSpawner next = GetNextSpawner();
+        //Debug.Log($"current base block index {currentBaseBlockIndex}");
+        Vector3 curBaseBLockPosition = baseBlocks[currentBaseBlockIndex].transform.position;
+
+        next.SpawnBlock(curBaseBLockPosition,baseBlockParentTransform[currentBaseBlockIndex]);
     }
 
-    public void SpawnBlockOnZ()
-    { 
-        blockSpawnerOnZ.SpawnBlock(baseBlockParentTransform[currentBaseBlockIndex]);
+    public BlockSpawner GetNextSpawner()
+    {
+        BlockSpawner chosen = null;
+
+        bool specialSpawnersExists = specialSpawnerList.Count>0;
+        bool specialSpanwerAllowed =specialSpawnerConsecutiveCount < maxFrequencyForSpecialSpawnerInARow;
+        bool specialSpawnerTriggered = UnityEngine.Random.value < specialSpawnerActivationChance;
+
+        if (specialSpawnersExists && specialSpawnerTriggered && specialSpanwerAllowed)
+        { 
+            specialSpawnerConsecutiveCount++;
+            chosen = specialSpawnerList[specialSpawnerListIndex].spawner;
+            specialSpawnerListIndex = (specialSpawnerListIndex + 1) % specialSpawnerList.Count;
+        }
+        else
+        {
+            if (mandatorySpawnerList.Count < 2)
+            {
+                Debug.Log("well what do you think is going to spawn block ? set atleast 2 mandatory spawner for it to be fun lol");
+            }
+            else
+            {
+                chosen = mandatorySpawnerList[mandatorySpawnerListIndex].spawner;
+                mandatorySpawnerListIndex = (mandatorySpawnerListIndex + 1) % mandatorySpawnerList.Count;
+            }
+            specialSpawnerConsecutiveCount = 0;
+        }
+        return chosen;
     }
+
+
+    //old method
+    //public void SpawnBlock()
+    //{
+    //    if (isUsingXSpawner)
+    //        SpawnBlockOnX();
+    //    else
+    //        SpawnBlockOnZ();
+
+    //    isUsingXSpawner = !isUsingXSpawner;// for alternating
+    //}
+
+    //public void SpawnBlockOnX()
+    //{
+    //    blockSpawnerOnX.SpawnBlock(baseBlockParentTransform[currentBaseBlockIndex]);
+    //}
+
+    //public void SpawnBlockOnZ()
+    //{ 
+    //    blockSpawnerOnZ.SpawnBlock(baseBlockParentTransform[currentBaseBlockIndex]);
+    //}
 
     public void SetParentOfSpawnedBlockToCorrespondingBaseBlock(Transform currentSpawnedBlock)
     {
